@@ -1,19 +1,19 @@
 from rest_framework import status
 from rest_framework import filters
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authentication import TokenAuthentication
 
-from .models import UserProfile
-from .permissions import UserProfilePermissions
-from .serializers import HelloSerializer, UserProfileSerializer
+from .models import UserProfile, UserStatus
+from .permissions import UpdateOwnProfile, UpdateOwnStatus
+from .serializers import HelloSerializer, UserProfileSerializer, UserStatusSerializer
 
 
 class HelloAPIView(APIView):
-
     serializer_class = HelloSerializer
 
     def get(self, request, format=None):
@@ -23,7 +23,6 @@ class HelloAPIView(APIView):
         return Response({'message': message, 'elements': elements})
 
     def post(self, request):
-
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             name = serializer.validated_data['name']
@@ -42,7 +41,6 @@ class HelloAPIView(APIView):
 
 
 class HelloViewSet(viewsets.ViewSet):
-
     serializer_class = HelloSerializer
 
     def list(self, request):
@@ -77,11 +75,23 @@ class HelloViewSet(viewsets.ViewSet):
 class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     queryset = UserProfile.objects.all()
-    authentication_classes = (TokenAuthentication, )
-    permission_classes = (UserProfilePermissions, )
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('name', 'email', )
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (UpdateOwnProfile,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name', 'email',)
 
 
 class UserLoginAPIView(ObtainAuthToken):
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+
+
+class UserStatusViewSet(viewsets.ModelViewSet):
+    serializer_class = UserStatusSerializer
+    queryset = UserStatus.objects.all()
+    authentication_classes = [TokenAuthentication, ]
+    permission_classes = [IsAuthenticated, UpdateOwnStatus]
+    filter_backends = [filters.SearchFilter, ]
+    search_fields = ['text']
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
+from django.conf import settings
 
 
 class UserProfileManager(BaseUserManager):
@@ -23,7 +24,6 @@ class UserProfileManager(BaseUserManager):
 
 
 class UserProfile(PermissionsMixin, AbstractBaseUser):
-
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
@@ -39,6 +39,18 @@ class UserProfile(PermissionsMixin, AbstractBaseUser):
 
     def get_short_name(self):
         return self.name
-    
+
     def __str__(self):
         return self.email
+
+
+class UserStatus(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    text = models.CharField(max_length=255)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.text
